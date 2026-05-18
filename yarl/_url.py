@@ -162,8 +162,10 @@ def rewrite_module(obj: _T) -> _T:
     return obj
 
 
-def _encode_relative_scheme_colon(path: str) -> str:
+def _encode_relative_scheme_colon(path: str, scheme: str, netloc: str) -> str:
     """Re-encode a scheme-shaped leading ``:`` in a relative path to ``%3A``."""
+    if scheme or netloc:
+        return path
     colon_pos = path.find(":")
     if colon_pos <= 0:
         return path
@@ -217,8 +219,7 @@ def encode_url(url_str: str) -> "URL":
         path = PATH_REQUOTER(path)
         if netloc and "." in path:
             path = normalize_path(path)
-        elif not scheme and not netloc:
-            path = _encode_relative_scheme_colon(path)
+        path = _encode_relative_scheme_colon(path, scheme, netloc)
     if query:
         query = QUERY_REQUOTER(query)
     if fragment:
@@ -1502,8 +1503,7 @@ class URL:
         path = human_quote(self.path, "#?")
         if TYPE_CHECKING:
             assert path is not None
-        if not self._scheme and not self._netloc:
-            path = _encode_relative_scheme_colon(path)
+        path = _encode_relative_scheme_colon(path, self._scheme, self._netloc)
         query_string = "&".join(
             "{}={}".format(human_quote(k, "#&+;="), human_quote(v, "#&+;="))
             for k, v in self.query.items()
